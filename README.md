@@ -172,4 +172,4 @@ Useful demo login after seeding:
 
 ## Pitch Video
 
-Demo video: https://drive.google.com/open?id=1LvXlxNeVV8cJA5jwiEftgh-SNSXgrthK&authuser=2&t=5.68
+Demo video: https://youtu.be/FQeNMtZWOcE?si=vuAtY7UcdLvUbqLo
