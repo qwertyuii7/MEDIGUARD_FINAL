@@ -24,6 +24,7 @@ const Navbar = () => {
     { path: ROUTES.SCANNER, label: 'Forensic Agent' },
     { path: ROUTES.DASHBOARD, label: 'Dashboard' },
     { path: ROUTES.BATCH_VERIFY, label: 'Database' },
+    { path: ROUTES.B2B_VERIFY, label: 'Wholesale B2B' },
   ];
 
   const roleNavLinks = publicNavLinks;

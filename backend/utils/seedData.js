@@ -6,6 +6,7 @@ import Medicine from '../models/Medicine.model.js'
 import BatchNumber from '../models/BatchNumber.model.js'
 import Alert from '../models/Alert.model.js'
 import Chemist from '../models/Chemist.model.js'
+import Supplier from '../models/Supplier.model.js'
 import { connectDB } from '../config/db.js'
 
 dotenv.config()
@@ -115,6 +116,32 @@ export const runSeed = async () => {
       await Chemist.findOneAndUpdate({ licenseNumber: chemist.licenseNumber }, chemist, { upsert: true, new: true })
     }
     console.log('5 Demo chemists seeded')
+
+    // 6. Insert Aminabad Suppliers
+    const suppliers = [
+      {
+        businessName: 'Aminabad Wholesale Meds',
+        gstin: '09AAAAA1111A1Z5',
+        drugLicenseNumber: 'UP-LKO-W-12345',
+        address: { street: 'Shop No 45, Aminabad Dawa Bazar', city: 'Lucknow', state: 'Uttar Pradesh', pincode: '226018' },
+        isAuthorized: true,
+        blacklisted: false
+      },
+      {
+        businessName: 'Fake Lucknow Traders',
+        gstin: '09BBBBB2222B1Z6',
+        drugLicenseNumber: 'UP-LKO-W-99999',
+        address: { street: 'Shop No 12, Latouche Road', city: 'Lucknow', state: 'Uttar Pradesh', pincode: '226018' },
+        isAuthorized: false,
+        blacklisted: true,
+        blacklistedReason: 'Caught selling counterfeit Paracetamol batches in 2023'
+      }
+    ]
+
+    for (const supplier of suppliers) {
+      await Supplier.findOneAndUpdate({ gstin: supplier.gstin }, supplier, { upsert: true, new: true })
+    }
+    console.log('2 Aminabad suppliers seeded')
 
     console.log('Seeding completed successfully')
   } catch (error) {

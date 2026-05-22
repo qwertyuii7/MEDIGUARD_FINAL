@@ -273,3 +273,55 @@ export const askGroq = async (userMessage, conversationHistory = [], medicineCon
   const content = await callGroq({ model: GROQ_CHAT_MODEL, messages, temperature: 0.7, max_tokens: 500 })
   return content
 }
+
+// ─── Step 4: Wholesale B2B Invoice Extraction ────────────────────
+const INVOICE_ANALYSIS_PROMPT = `You are a strict data extraction bot for pharmaceutical B2B invoices.
+Analyze this invoice image. Do NOT describe the image. Extract exactly these 3 fields and nothing else to save tokens.
+
+RESPOND IN THIS EXACT FORMAT:
+
+GSTIN: [extract the 15-character GSTIN of the supplier issuing the invoice. If missing, write BLANK]
+INVOICE_NUMBER: [extract the invoice/bill number. If missing, write BLANK]
+BATCHES: [extract a comma-separated list of ALL medicine batch numbers found in the line items. If none, write NONE]
+
+CRITICAL: Extract only the data, follow the format exactly.`
+
+export const analyzeInvoice = async (imageUrl) => {
+  console.log('[AI SERVICE] Running B2B Invoice Extraction...')
+  const { base64Data, mimeType } = await fetchImageAsBase64(imageUrl)
+  
+  const payload = {
+    model: 'meta-llama/llama-3.2-11b-vision-preview', // Using 11b vision for invoices
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Data}` } },
+        { type: 'text', text: INVOICE_ANALYSIS_PROMPT }
+      ]
+    }],
+    max_tokens: 300, // Kept small to avoid token spikes
+    temperature: 0.1
+  }
+
+  const rawResponse = await callGroq(payload)
+
+  const get = (field) => {
+    const match = rawResponse.match(new RegExp(`${field}:\\s*([^\\n]+)`, 'i'))
+    const value = match?.[1]?.trim()
+    return (!value || value === 'BLANK' || value === 'N/A' || value === 'NONE') ? null : value
+  }
+
+  const gstin = get('GSTIN')
+  const invoiceNumber = get('INVOICE_NUMBER')
+  const batchesStr = get('BATCHES')
+  
+  const batches = batchesStr ? batchesStr.split(',').map(b => b.trim()).filter(Boolean) : []
+
+  return {
+    gstin,
+    invoiceNumber,
+    batches,
+    rawResponse
+  }
+}
+

@@ -13,6 +13,7 @@ import Home from './pages/Home.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Alerts from './pages/Alerts.jsx';
 import BatchVerify from './pages/BatchVerify.jsx';
+import B2BVerification from './pages/B2BVerification.jsx';
 import NearbyChemist from './pages/NearbyChemist.jsx';
 import MedicineInfo from './pages/MedicineInfo.jsx';
 import Sidebar from './components/common/Sidebar.jsx';
@@ -76,6 +77,7 @@ function App() {
                     <Route path={ROUTES.SCANNER} element={<Scanner />} />
                     <Route path={ROUTES.ALERTS} element={<Alerts />} />
                     <Route path={ROUTES.BATCH_VERIFY} element={<BatchVerify />} />
+                    <Route path={ROUTES.B2B_VERIFY} element={<B2BVerification />} />
                     <Route path={ROUTES.NEARBY_CHEMIST} element={<NearbyChemist />} />
                     <Route path={ROUTES.MEDICINE_INFO} element={<MedicineInfo />} />
                 <Route path="/login" element={<Login />} />

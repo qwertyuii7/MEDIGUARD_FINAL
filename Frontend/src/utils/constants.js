@@ -9,6 +9,7 @@ export const ROUTES = {
   ALERTS: '/alerts',
   SCAN_HISTORY: '/dashboard/history',
   NOT_FOUND: '/404',
+  B2B_VERIFY: '/b2b-verify',
 };
 
 export const MEDICINE_CATEGORIES = ['tablet', 'syrup', 'injection', 'capsule', 'gel', 'lozenge', 'powder'];
