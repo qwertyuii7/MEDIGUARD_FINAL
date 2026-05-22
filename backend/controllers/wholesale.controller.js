@@ -5,10 +5,14 @@ import { analyzeInvoice, analyzeImage } from '../services/groq.service.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 
 export const verifyWholesalePurchase = asyncHandler(async (req, res) => {
+  console.log('\n========== B2B WHOLESALE VERIFICATION REQUEST ==========')
   const { manualGstin, manualInvoiceNumber, manualBatchNumber } = req.body
+  console.log('[B2B] Manual inputs:', { manualGstin, manualInvoiceNumber, manualBatchNumber })
   
   const invoiceFile = req.files?.['invoiceImage']?.[0]
   const medicineFile = req.files?.['medicineImage']?.[0]
+  console.log('[B2B] Invoice file:', invoiceFile ? { path: invoiceFile.path, mimetype: invoiceFile.mimetype, size: invoiceFile.size } : 'NONE')
+  console.log('[B2B] Medicine file:', medicineFile ? { path: medicineFile.path, mimetype: medicineFile.mimetype, size: medicineFile.size } : 'NONE')
 
   let gstin = manualGstin
   let invoiceNumber = manualInvoiceNumber
@@ -20,15 +24,20 @@ export const verifyWholesalePurchase = asyncHandler(async (req, res) => {
   // 1. Process Invoice via Vision or fallback
   if (invoiceFile) {
     const invoiceUrl = invoiceFile.path
+    console.log('[B2B] Step 1: Calling analyzeInvoice with path:', invoiceUrl)
     try {
       const extracted = await analyzeInvoice(invoiceUrl)
+      console.log('[B2B] AI Extraction Result:', JSON.stringify(extracted, null, 2))
       if (extracted.gstin) gstin = extracted.gstin
       if (extracted.invoiceNumber) invoiceNumber = extracted.invoiceNumber
       if (extracted.batches && extracted.batches.length > 0) invoiceBatches = extracted.batches
     } catch (err) {
-      console.error('Invoice vision extraction failed:', err)
+      console.error('[B2B] ❌ Invoice vision extraction FAILED:', err.message)
+      console.error('[B2B] Full error:', err.response?.data || err)
       flags.push('VISION_EXTRACTION_FAILED')
     }
+  } else {
+    console.log('[B2B] No invoice file uploaded, using manual inputs only')
   }
 
   // 2. Supplier Verification (40 pts)

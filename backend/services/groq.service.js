@@ -1,4 +1,6 @@
 import axios from 'axios'
+import fs from 'fs'
+import path from 'path'
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 
@@ -129,9 +131,8 @@ export const fetchImageAsBase64 = async (imageUrl) => {
     base64Data = Buffer.from(response.data).toString('base64')
   } else {
     // Local file – read directly from disk
-    const fs = require('fs')
-    const path = require('path')
     const absolutePath = path.resolve(imageUrl)
+    console.log('[IMAGE] Reading local file:', absolutePath)
     const fileBuffer = await fs.promises.readFile(absolutePath)
     // Guess mime type from extension (fallback to jpeg)
     const ext = path.extname(absolutePath).toLowerCase()
@@ -313,7 +314,7 @@ export const analyzeInvoice = async (imageUrl) => {
   const { base64Data, mimeType } = await fetchImageAsBase64(imageUrl)
   
   const payload = {
-    model: 'meta-llama/llama-3.2-11b-vision-preview', // Using 11b vision for invoices
+    model: 'meta-llama/llama-4-scout-17b-16e-instruct', // Same model as working scanner
     messages: [{
       role: 'user',
       content: [
