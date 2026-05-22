@@ -14,12 +14,13 @@ router.post('/submit', documentUpload.fields([
 ]), submitReport)
 
 router.get('/my-reports', getMyReports)
-router.get('/:id', getMyReports) // In reality this should be getReportById but user didn't specify.
 
 // Admin routes
 router.get('/all', isAdmin, getAllReports)
 router.get('/stats/overview', isAdmin, getReportStats)
 router.put('/:id/status', isAdmin, updateReportStatus)
 router.post('/:id/forward-cdsco', isAdmin, forwardToCDSCO)
+
+router.get('/:id', getMyReports) // In reality this should be getReportById but user didn't specify.
 
 export default router

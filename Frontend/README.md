@@ -1,159 +1,129 @@
 # MediGuard Frontend
 
-The frontend for MediGuard is built with React 18 (Vite) and TailwindCSS, providing a highly interactive, 3D-accelerated user experience focused on scanning, mapping, and user engagement.
+This is the React frontend for MediGuard. It gives users the main verification screens: medicine scanning, batch checking, B2B wholesale invoice verification, alerts, nearby chemists, auth, and role-based dashboards.
 
-## 🏗️ Architecture & Component Flow
+## Architecture
 
 ```mermaid
-graph TD
-    A[App.tsx / Routing] --> B(Pages)
-    B --> C[Home]
-    B --> D[Scanner Module]
-    B --> E[Chemist Locator Map]
-    B --> F[User/Admin Dashboard]
-    
-    C --> G(Shared UI Components)
-    D --> G
-    
-    G --> H[Upload Zone / Camera Capture]
-    G --> I[Verification Results Display]
-    G --> J[3D Models / Framer Motion Elements]
-    
-    D --> K[API Integration]
-    E --> K
+flowchart TD
+    A[main.jsx] --> B[React Router]
+    A --> C[ThemeProvider]
+    A --> D[AuthProvider]
+    A --> E[AppProvider]
+
+    B --> F[Public pages]
+    B --> G[Protected dashboard pages]
+    F --> H[Scanner, Batch Verify, B2B Verify, Alerts, Nearby Chemist]
+    G --> I[User, Chemist, Admin dashboards]
+
+    H --> J[Shared components]
+    I --> J
+    J --> K[Services and hooks]
+    K --> L[Axios API client]
+    L --> M[Backend /api/v1]
+
+    N[Mock data] --> E
+    N --> O[Some dashboard and medicine/report demo views]
 ```
 
----
+The app is organized around pages and shared components. `App.jsx` defines the routes, wraps everything with theme/auth/app context providers, and shows the common navbar/sidebar/footer outside the home page.
 
-## 🔌 Connecting APIs to the Frontend
+## Main Folders
 
-MediGuard uses standard REST conventions combined with Axios and React Hooks to efficiently handle API communication and state management.
-
-### 1. Axios Configuration
-Create an Axios instance to centralize configuration, such as setting the base URL and adding auth headers.
-
-```javascript
-// src/api/axios.js
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add an interceptor to inject the JWT token
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-export default api;
+```text
+Frontend/
+  public/          Logo and static visual assets
+  src/components/ Shared UI, scanner, medicine, report, dashboard components
+  src/context/    Auth, theme, and app-level state providers
+  src/hooks/      Location, report, and scanner helper hooks
+  src/pages/      Routed screens
+  src/services/   Axios API client and feature service functions
+  src/utils/      Constants, mock data, helpers, validators, OSM helpers
+  src/App.jsx     Main route layout
+  src/main.jsx    React entry point
 ```
 
-### 2. Creating API Service Layers
-Group related endpoints together in a service file.
+## Important Pages
 
-```javascript
-// src/services/reportService.js
-import api from '../api/axios';
+- `/` - home screen
+- `/scanner` - upload a medicine image and view AI risk analysis
+- `/batch-verify` - check a batch number directly
+- `/b2b-verify` - upload/enter GST invoice and medicine batch details for wholesale verification
+- `/alerts` - recall/spurious medicine alerts
+- `/nearby-chemist` - chemist locator
+- `/medicine-info` - medicine information/search view
+- `/login`, `/register` - auth screens
+- `/dashboard/user` - public user dashboard
+- `/dashboard/chemist` - chemist dashboard
+- `/dashboard/admin` - admin dashboard
+- `/dashboard/history` - protected scan history
 
-export const submitReport = async (reportData) => {
-  const response = await api.post('/report/submit', reportData);
-  return response.data;
-};
+## API And State Flow
 
-export const getReportHistory = async () => {
-  const response = await api.get('/report/history');
-  return response.data;
-};
+- `src/services/api.js` creates the shared Axios client using `VITE_API_BASE_URL`.
+- Auth tokens are read from `localStorage` and attached to API requests by an Axios interceptor.
+- `AuthContext.jsx` stores the logged-in user/chemist state and handles login, register, and logout.
+- `ThemeContext.jsx` handles theme state.
+- `AppContext.jsx` holds app-level demo data such as alerts, scan history, and reports.
+- Scanner and B2B pages call the backend directly through Axios/FormData for file upload flows.
+
+Backend base URL defaults to:
+
+```text
+http://localhost:5000/api/v1
 ```
 
-### 3. Using React Hooks for State Management
-Custom hooks allow components to trigger API calls while automatically tracking loading and error states.
+## Local Setup
 
-```javascript
-// src/hooks/useReport.js
-import { useState, useCallback } from 'react';
-import { submitReport } from '../services/reportService';
+Install dependencies:
 
-export const useReport = () => {
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
-
-  const submitFakeReport = useCallback(async (reportData) => {
-    setSubmitting(true);
-    setError(null);
-    try {
-      const response = await submitReport(reportData);
-      setSuccess(true);
-      return response;
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to submit report.');
-    } finally {
-      setSubmitting(false);
-    }
-  }, []);
-
-  return { submitting, error, success, submitFakeReport };
-};
+```bash
+cd Frontend
+npm install
 ```
 
-### 4. Implementation in Components
-Finally, consume the custom hook inside a functional component.
+Create `Frontend/.env`:
 
-```javascript
-// src/components/ReportForm.jsx
-import React from 'react';
-import { useReport } from '../hooks/useReport';
-
-const ReportForm = () => {
-  const { submitting, error, success, submitFakeReport } = useReport();
-
-  const handleReport = async () => {
-    await submitFakeReport({ reason: "Counterfeit visual anomalies" });
-  };
-
-  if (success) return <p>Report submitted successfully!</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
-
-  return (
-    <button onClick={handleReport} disabled={submitting}>
-      {submitting ? 'Submitting...' : 'Submit Report'}
-    </button>
-  );
-};
-
-export default ReportForm;
-```
-
----
-
-## 🛠️ Setup & Execution
-
-### Installation
-1. Navigate to the Frontend directory:
-   ```bash
-   cd Frontend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-### Configuration
-Create a `.env` file in the root of the `Frontend` directory with the following variables:
 ```env
 VITE_API_BASE_URL=http://localhost:5000/api/v1
 ```
 
-### Running the Application
-Start the Vite development server:
+Start the dev server:
+
 ```bash
 npm run dev
 ```
+
+Open:
+
+```text
+http://localhost:5173
+```
+
+Build for production:
+
+```bash
+npm run build
+npm run preview
+```
+
+## Frontend Stack
+
+- React 18 with Vite
+- Tailwind CSS
+- React Router
+- Axios
+- Framer Motion
+- Leaflet and React Leaflet
+- Recharts
+- Lucide React
+- React Hot Toast
+- Three.js and React Three Fiber
+
+## Notes And Limitations
+
+- The scanner and B2B verification screens depend on the backend running locally and having a working `VITE_API_BASE_URL`.
+- The full image scanner needs backend AI/upload configuration to be working, especially Groq and Cloudinary.
+- Some medicine, report, and dashboard service files still use mock/demo data for presentation flow.
+- The B2B verification page is wired to the real `/wholesale/verify` endpoint, but image extraction quality depends on invoice image clarity.
+- Protected dashboards depend on the role returned by backend auth: `public`, `chemist`, or `admin`.

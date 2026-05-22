@@ -28,6 +28,7 @@ import AccessDenied from './pages/AccessDenied.jsx';
 import Scanner from './pages/Scanner.jsx';
 import ScanHistory from './pages/dashboard/ScanHistory.jsx';
 import Profile from './pages/Profile.jsx';
+import ReportFake from './pages/ReportFake.jsx';
 
 // Routes
 import { ROUTES } from './utils/constants.js';
@@ -80,6 +81,7 @@ function App() {
                     <Route path={ROUTES.B2B_VERIFY} element={<B2BVerification />} />
                     <Route path={ROUTES.NEARBY_CHEMIST} element={<NearbyChemist />} />
                     <Route path={ROUTES.MEDICINE_INFO} element={<MedicineInfo />} />
+                    <Route path={ROUTES.REPORT_FAKE} element={<ReportFake />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
 

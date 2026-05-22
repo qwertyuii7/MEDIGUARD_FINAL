@@ -14,15 +14,14 @@ router.get('/', (req, res, next) => {
   })
 }, getAllAlerts)
 
-router.get('/:id', getAlertById)
-
-router.use(verifyToken)
-router.get('/unread/count', getUnreadCount)
-router.post('/:id/read', markAsRead)
+router.get('/unread/count', verifyToken, getUnreadCount)
+router.post('/:id/read', verifyToken, markAsRead)
 
 // Admin
-router.post('/', isAdmin, createAlert)
-router.put('/:id', isAdmin, updateAlert)
-router.put('/:id/deactivate', isAdmin, deactivateAlert)
+router.post('/', verifyToken, isAdmin, createAlert)
+router.put('/:id', verifyToken, isAdmin, updateAlert)
+router.put('/:id/deactivate', verifyToken, isAdmin, deactivateAlert)
+
+router.get('/:id', getAlertById)
 
 export default router
