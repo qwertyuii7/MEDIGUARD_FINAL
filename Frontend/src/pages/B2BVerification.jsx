@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Upload, FileText, CheckCircle, AlertTriangle, XCircle, FileImage, Layers } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertTriangle, XCircle, FileImage, Layers, Shield } from 'lucide-react';
 import { API_BASE_URL } from '../utils/constants.js';
 import toast from 'react-hot-toast';
 

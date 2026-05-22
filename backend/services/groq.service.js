@@ -105,20 +105,42 @@ const callGroq = async (payload, retries = 2) => {
 
 // ─── Fetch image as base64 ───────────────────────────────────────
 export const fetchImageAsBase64 = async (imageUrl) => {
-  let fetchUrl = imageUrl
-  if (/res\.cloudinary\.com/i.test(imageUrl) && imageUrl.includes('/upload/')) {
-    fetchUrl = imageUrl.replace('/upload/', '/upload/f_jpg,q_90,w_1600/')
+  // If the URL is a remote HTTP(s) address, fetch it via axios.
+  // Otherwise treat it as a local file path on the server.
+  const isRemote = /^https?:\/\//i.test(imageUrl)
+
+  let mimeType = 'image/jpeg'
+  let base64Data = ''
+
+  if (isRemote) {
+    // Cloudinary optimisation – fetch a resized version if possible
+    let fetchUrl = imageUrl
+    if (/res\.cloudinary\.com/i.test(imageUrl) && imageUrl.includes('/upload/')) {
+      fetchUrl = imageUrl.replace('/upload/', '/upload/f_jpg,q_90,w_1600/')
+    }
+
+    const response = await axios.get(fetchUrl, {
+      responseType: 'arraybuffer',
+      timeout: 30000
+    })
+    const contentType = String(response.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
+    const supportedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    mimeType = supportedTypes.includes(contentType) ? contentType : 'image/jpeg'
+    base64Data = Buffer.from(response.data).toString('base64')
+  } else {
+    // Local file – read directly from disk
+    const fs = require('fs')
+    const path = require('path')
+    const absolutePath = path.resolve(imageUrl)
+    const fileBuffer = await fs.promises.readFile(absolutePath)
+    // Guess mime type from extension (fallback to jpeg)
+    const ext = path.extname(absolutePath).toLowerCase()
+    if (['.png'].includes(ext)) mimeType = 'image/png'
+    else if (['.webp'].includes(ext)) mimeType = 'image/webp'
+    else if (['.gif'].includes(ext)) mimeType = 'image/gif'
+    else mimeType = 'image/jpeg'
+    base64Data = fileBuffer.toString('base64')
   }
-
-  const response = await axios.get(fetchUrl, {
-    responseType: 'arraybuffer',
-    timeout: 30000
-  })
-
-  const contentType = String(response.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
-  const supportedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-  const mimeType = supportedTypes.includes(contentType) ? contentType : 'image/jpeg'
-  const base64Data = Buffer.from(response.data).toString('base64')
 
   return { base64Data, mimeType }
 }
