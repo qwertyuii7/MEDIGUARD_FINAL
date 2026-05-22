@@ -1,149 +1,175 @@
-# MediGuard 🛡️ — AI-Powered Pharmaceutical Integrity Platform
+# MediGuard
 
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/mohdaaftab034/mediguard-4)
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-green.svg)](https://nodejs.org/)
-[![React Version](https://img.shields.io/badge/react-18.x-61dafb.svg)](https://reactjs.org/)
-[![Vision AI](https://img.shields.io/badge/AI-Groq%20Vision-orange.svg)](https://groq.com/)
+MediGuard is a medicine verification web app built for the Aminabad wholesale medicine market context in Lucknow. It helps a buyer or chemist check medicine packaging, batch numbers, GST invoice details, supplier records, and recall alerts before purchase. The goal is not to replace lab testing, but to give a fast risk signal at the counter so suspicious stock can be stopped early.
 
-**MediGuard** is a next-generation security ecosystem designed to combat the global counterfeit medicine crisis. By combining **advanced neural vision analysis** with a **real-time regulatory sync**, MediGuard empowers users, chemists, and authorities to verify pharmaceutical authenticity in seconds.
+## Team
 
----
+- Team name: LoneWolf
+- Member: Mayank Chaudhary
+- GitHub: [qwertyuii7](https://github.com/qwertyuii7)
 
-## 🎥 Pitch Video
-Demo Video: https://drive.google.com/open?id=1LvXlxNeVV8cJA5jwiEftgh-SNSXgrthK&authuser=2&t=5.68
+## Problem Statement
 
----
+PS-02 - Counterfeit medicine detection in Aminabad wholesale market
 
-## ✨ Core Pillars
+Aminabad is UP's largest wholesale medicine hub. Build an agent that cross-checks medicine batch numbers, GST invoices, and supplier databases in real time to flag counterfeit drugs at the point of purchase.
 
-### 👁️ Neural Vision Inspection
-Utilizing high-performance **Groq Llama-3.2-11B Vision** models, the platform performs forensic-level analysis on medicine packaging. It detects micro-anomalies in typography, logo placement, hologram integrity, and color shifts that are invisible to the naked eye.
+Lucknow context: Aminabad Dawa Bazar
 
-### 📊 Real-Time Regulatory Sync
-Directly integrated with **CDSCO (Central Drugs Standard Control Organisation)** data streams. Every scan cross-references an internal database of officially recalled, substandard (NSQ), and spurious drug batches.
+## What The Project Does
 
-### 📍 Verified Chemist Network
-A geospatial directory of pharmacies verified by local health authorities. Users can find authentic sellers nearby, while pharmacies caught selling counterfeits are flagged and blacklisted in real-time.
+- Scans medicine package images and extracts visible medicine details, batch number, expiry, MRP, manufacturer, and packaging quality signals.
+- Checks extracted or manually entered batch numbers against recalled and under-investigation batch records.
+- Provides a B2B wholesale verification flow where invoice image/manual GSTIN, invoice number, and medicine batch are checked together.
+- Verifies UP GSTIN format and checks the supplier against a seeded supplier database, including blacklist status.
+- Shows CDSCO-style alerts, nearby verified chemists, scan history, dashboards, and role-based flows for public users, chemists, and admins.
 
----
-
-## 🚀 Key Features
-
-- **Instant Authenticity Scan**: Upload a photo of any medicine strip for a comprehensive risk assessment.
-- **Batch Verification**: Extract and verify Batch IDs and Expiry dates against official manufacturer records.
-- **Automatic Incident Reporting**: Generates formal, legal-grade incident reports for detected counterfeits.
-- **Dynamic Alerts**: Real-time notifications for new drug recalls and spurious drug alerts in your state.
-- **Interactive Map**: Find verified chemists within a 2-5km radius using MongoDB Geospatial indexing.
-
----
-
-## 🏗️ System Architecture
-
-MediGuard follows a decoupled, service-oriented architecture designed for scalability and rapid AI inference.
+## Architecture
 
 ```mermaid
-graph TD
-    subgraph Client_Side
-        A[React Frontend] -->|HTTPS/WS| B[API Gateway]
-    end
+flowchart TD
+    A[React + Vite frontend] --> B[Express API]
+    B --> C[Auth, scan, batch, wholesale, alerts, chemists, dashboard routes]
+    C --> D[MongoDB via Mongoose]
+    C --> E[Groq vision and chat services]
+    C --> F[Cloudinary or local upload storage]
+    C --> G[CDSCO scraper and static alert seed data]
 
-    subgraph Backend_Services
-        B --> C[Express.js Server]
-        C --> D[Groq Vision Service]
-        C --> E[CDSCO Scraper Job]
-        C --> F[Notification Service]
-    end
-
-    subgraph Data_Layer
-        C --> G[(MongoDB Atlas)]
-        G --> H[User Data]
-        G --> I[Recalled Batches]
-        G --> J[Chemist Directory]
-    end
-
-    subgraph External_Integrations
-        D -->|Inference| K[Groq LPU]
-        C -->|Storage| L[Cloudinary]
-        E -->|Scrape| M[CDSCO Official Portal]
-    end
+    E --> H[Medicine OCR and packaging quality check]
+    E --> I[Invoice GSTIN and batch extraction]
+    D --> J[Users, scans, batches, suppliers, invoices, alerts, chemists]
 ```
 
----
+Main local flow:
 
-## 🛠️ Technology Stack
+1. Frontend sends image/manual verification data to the backend.
+2. Backend uploads/reads files, calls Groq for OCR or invoice extraction, and normalizes the extracted fields.
+3. Batch numbers are checked through an in-memory recalled-batch map first, then MongoDB as fallback.
+4. Wholesale checks combine supplier GSTIN verification, invoice batch extraction, physical batch matching, and medicine risk signals into a score.
+5. Results are saved as scan or invoice records and returned to the UI.
 
-| Layer | Technology |
-| :--- | :--- |
-| **Frontend** | React 18, Vite, TailwindCSS, Framer Motion, Axios |
-| **Backend** | Node.js, Express.js, Mongoose |
-| **Database** | MongoDB (Geospatial Indexing, Atlas Search) |
-| **AI/ML** | Groq Llama-3.2-11B-Vision-Preview, OpenAI API |
-| **Infrastructure** | Vercel (Frontend), Vercel/Node (Backend), Cloudinary (Images) |
+## Tech Stack And Tools
 
----
+Frontend:
 
-## 📦 Project Structure
+- React 18, Vite, Tailwind CSS
+- React Router, Axios, Framer Motion
+- Leaflet/React Leaflet for maps
+- Recharts for dashboards
+- Lucide React icons, React Hot Toast
+- Three.js / React Three Fiber for visual components
 
-```text
-├── Frontend/           # React + Vite application
-│   ├── src/            # Components, Hooks, Services, Pages
-│   └── public/         # Static assets
-├── backend/            # Node.js + Express API
-│   ├── config/         # DB and Cloudinary configurations
-│   ├── controllers/    # Request handlers
-│   ├── models/         # Mongoose schemas
-│   ├── routes/         # API endpoint definitions
-│   └── services/       # AI, Scraping, and External logic
-└── README.md           # You are here
-```
+Backend:
 
----
+- Node.js, Express 5
+- MongoDB, Mongoose
+- JWT auth, bcryptjs
+- Multer, Cloudinary storage, local disk fallback
+- Helmet, CORS, Morgan, express-rate-limit
+- Cheerio, Axios, node-cron for alert scraping jobs
+- Nodemailer and Twilio services are present for optional notifications
 
-## 🏁 Getting Started
+AI and development tools:
 
-### 1. Prerequisites
-- Node.js (v18+)
-- MongoDB Atlas Account (or local instance)
-- Groq API Key
-- Cloudinary Account
+- Groq vision/chat models for medicine image analysis, OCR, packaging checks, invoice extraction, and chat fallback
+- Optional Gemini API path for medicine chat with search grounding when `GEMINI_API_KEY` is provided
+- Antigravity
+- Codex
 
-### 2. Installation
+## Quick Run Guide For Local Machine
 
-#### Clone the Repository
-```bash
-git clone https://github.com/mohdaaftab034/mediguard-4.git
-cd mediguard-4
-```
+Prerequisites:
 
-#### Backend Setup
+- Node.js 18 or newer
+- npm
+- MongoDB local or MongoDB Atlas URI
+- Groq API key
+- Cloudinary account for the full medicine image scanner flow
+
+Run the backend in one terminal:
+
 ```bash
 cd backend
 npm install
-# Create .env with MONGODB_URI, JWT_SECRET, GROQ_API_KEY, CLOUDINARY_URL
-npm run dev
 ```
 
-#### Frontend Setup
+Create `backend/.env`:
+
+```env
+PORT=5000
+CLIENT_URL=http://localhost:5173
+MONGODB_URI=mongodb://127.0.0.1:27017/mediguard
+
+JWT_SECRET=replace_with_a_long_secret
+JWT_EXPIRES_IN=7d
+JWT_REFRESH_SECRET=replace_with_another_long_secret
+JWT_REFRESH_EXPIRES_IN=30d
+
+GROQ_API_KEY=your_groq_api_key
+
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+
+ADMIN_EMAIL=admin@mediguard.in
+ADMIN_PASSWORD=Admin@123456
+```
+
+Start the backend:
+
 ```bash
-cd ../Frontend
-npm install
-# Create .env with VITE_API_BASE_URL
 npm run dev
 ```
 
----
+The backend runs on `http://localhost:5000`. On local startup it seeds basic demo data automatically. To load the larger recalled batch dataset, run this once:
 
-## 📖 Detailed Documentation
+```bash
+npm run seed:batches
+```
 
-For specific implementation details, refer to the module-level READMEs:
-- 📂 [**Backend Technical Guide**](./backend/README.md) - API endpoints, JSON schemas, and server architecture.
-- 📂 [**Frontend UI Guide**](./Frontend/README.md) - Component lifecycle, state management, and 3D integration.
+Run the frontend in another terminal:
 
----
+```bash
+cd Frontend
+npm install
+```
 
-## ⚖️ License
-Distributed under the MIT License. See `LICENSE` for more information.
+Create `Frontend/.env`:
 
----
+```env
+VITE_API_BASE_URL=http://localhost:5000/api/v1
+```
 
-Developed with ❤️ by the MediGuard Team.
+Start the frontend:
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:5173`.
+
+Useful demo login after seeding:
+
+- Admin: `admin@mediguard.in` / `Admin@123456`
+
+## Important Routes In The App
+
+- `/scanner` - medicine image scan and AI risk report
+- `/batch-verify` - direct batch number check
+- `/b2b-verify` - wholesale invoice, GSTIN, supplier, and batch cross-check
+- `/alerts` - medicine recall and spurious drug alerts
+- `/nearby-chemist` - verified chemist lookup
+- `/dashboard/user`, `/dashboard/chemist`, `/dashboard/admin` - role-based dashboards
+
+## Known Limitations
+
+- The supplier database and many recall records are seeded/demo data, not a complete live government database.
+- The CDSCO scraper is included, but real scraping depends on the public website structure and network availability. Static alert seed data is used as a fallback.
+- AI image analysis depends heavily on image clarity, packaging visibility, and Groq API availability. It should be treated as a risk signal, not legal proof or medical advice.
+- The main medicine scanner currently expects Cloudinary configuration because it uses a remote image URL for analysis. Some B2B/manual checks can still work with local upload fallback.
+- PDF invoice upload is allowed by middleware, but image invoices are more reliable because the current vision pipeline is image-first.
+- Some dashboard numbers and UI lists still use mock/demo data, so they are suitable for judging/demo flow but not production reporting yet.
+
+## Pitch Video
+
+Demo video: https://drive.google.com/open?id=1LvXlxNeVV8cJA5jwiEftgh-SNSXgrthK&authuser=2&t=5.68
