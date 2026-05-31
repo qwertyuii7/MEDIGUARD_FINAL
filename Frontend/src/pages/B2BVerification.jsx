@@ -195,12 +195,27 @@ const B2BVerification = () => {
                   <span className="text-text-primary font-mono">{result.gstin || 'NOT FOUND'}</span>
                 </div>
                 
+                {/* Government API Status */}
                 <div className="flex justify-between items-center py-2 border-b border-border-color">
-                  <span className="text-text-secondary font-semibold">Supplier Status:</span>
+                  <span className="text-text-secondary font-semibold">Govt GST Registry:</span>
+                  {result.gstGovtVerified ? (
+                    <span className="text-blue-500 font-bold flex items-center gap-1">
+                      <Shield size={14} /> Verified ✓
+                      <span className="text-xs truncate max-w-[150px] ml-1" title={result.govtDetails?.legalName}>
+                        ({result.govtDetails?.legalName})
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-warning font-bold flex items-center gap-1"><AlertTriangle size={14}/> Unverified / API Failed</span>
+                  )}
+                </div>
+
+                <div className="flex justify-between items-center py-2 border-b border-border-color">
+                  <span className="text-text-secondary font-semibold">Local Supplier DB:</span>
                   {result.supplierDetails ? (
                     <span className="text-success font-bold flex items-center gap-1"><CheckCircle size={14}/> {result.supplierDetails.businessName} (Authorized)</span>
                   ) : (
-                    <span className="text-danger font-bold flex items-center gap-1"><AlertTriangle size={14}/> Unverified/Not in DB</span>
+                    <span className="text-danger font-bold flex items-center gap-1"><AlertTriangle size={14}/> Not Registered Locally</span>
                   )}
                 </div>
 

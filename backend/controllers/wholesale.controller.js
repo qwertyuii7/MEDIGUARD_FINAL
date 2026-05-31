@@ -40,7 +40,7 @@ export const verifyWholesalePurchase = asyncHandler(async (req, res) => {
     console.log('[B2B] No invoice file uploaded, using manual inputs only')
   }
 
-  // 2. Supplier Verification (40 pts)
+  // 2. Supplier Verification (40 pts max locally, plus govt boost)
   const supplierCheck = await verifySupplier(gstin)
   
   if (supplierCheck.valid) {
@@ -52,6 +52,17 @@ export const verifyWholesalePurchase = asyncHandler(async (req, res) => {
     } else if (isValidUPGstinFormat(gstin)) {
       verificationScore += 10 // Valid format but not in DB
     }
+  }
+
+  // Bonus for Government API Verification
+  if (supplierCheck.gstGovtVerified) {
+    if (!supplierCheck.valid && !supplierCheck.reason.includes('blacklisted')) {
+      verificationScore += 20; // Big boost if not in local DB but govt verified
+    } else if (supplierCheck.valid) {
+      verificationScore += 10; // Extra trust factor
+    }
+  } else if (gstin && isValidUPGstinFormat(gstin)) {
+    flags.push('GOVT_API_VERIFICATION_FAILED');
   }
 
   // Helper for format check
@@ -123,9 +134,11 @@ export const verifyWholesalePurchase = asyncHandler(async (req, res) => {
     success: true,
     data: {
       invoiceId: newInvoice._id,
-      score: verificationScore,
+      score: verificationScore > 100 ? 100 : verificationScore,
       gstin: gstin,
       supplierDetails: supplierCheck.valid ? supplierCheck.supplier : null,
+      gstGovtVerified: supplierCheck.gstGovtVerified,
+      govtDetails: supplierCheck.govtDetails,
       flags,
       extractedBatches: invoiceBatches,
       physicalBatch: extractedMedicineBatch,
