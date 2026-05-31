@@ -171,11 +171,16 @@ export const analyzeMedicine = asyncHandler(async (req, res) => {
   if (!req.file) throw new ApiError(400, 'No image uploaded')
 
   const cloudinaryUrl = req.file.path
-  if (!cloudinaryUrl.startsWith('http')) {
-    throw new ApiError(500, 'Cloudinary upload failed')
+  // Convert Windows backslashes to forward slashes for cross-platform compatibility
+  let imageUrl = cloudinaryUrl.replace(/\\/g, '/')
+
+  // If local fallback is used, append full server URL so frontend can load it
+  if (!imageUrl.startsWith('http')) {
+    const baseUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`
+    imageUrl = `${baseUrl}/${imageUrl}`
   }
 
-  console.log('[SCAN] Starting pipeline for:', cloudinaryUrl)
+  console.log('[SCAN] Starting pipeline for:', imageUrl)
 
   // Step 1: Fetch Image & Run combined OCR + Quality Check
   const { base64Data, mimeType } = await fetchImageAsBase64(cloudinaryUrl)
@@ -261,7 +266,7 @@ export const analyzeMedicine = asyncHandler(async (req, res) => {
   // Step 7: Save to DB
   const scan = await Scan.create({
     user: req.user?._id || null,
-    imageUrl: cloudinaryUrl,
+    imageUrl: imageUrl, // Uses the correctly formatted URL
     imagePublicId: req.file.filename,
     result: finalStatus,
     confidence: layer3.confidence,
@@ -312,14 +317,20 @@ export const getScanHistory = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1
   const limit = parseInt(req.query.limit) || 20
 
-  const scans = await Scan.find({ user: req.user._id })
+  // Build a query that returns scans belonging to this user OR guest scans (user: null)
+  // This ensures scans made before login or without auth still appear in history
+  const userFilter = req.user?._id
+    ? { $or: [{ user: req.user._id }, { user: null }] }
+    : { user: null }
+
+  const scans = await Scan.find(userFilter)
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(limit)
     .select('imageUrl result confidence riskLevel medicineDetails batchStatus createdAt')
     .lean()
 
-  const total = await Scan.countDocuments({ user: req.user._id })
+  const total = await Scan.countDocuments(userFilter)
 
   return res.json(new ApiResponse(200, {
     scans,
@@ -330,10 +341,12 @@ export const getScanHistory = asyncHandler(async (req, res) => {
 })
 
 export const getScanById = asyncHandler(async (req, res) => {
-  const scan = await Scan.findOne({
-    _id: req.params.id,
-    user: req.user._id
-  }).lean()
+  // Allow viewing scans that belong to the user OR are guest scans
+  const userFilter = req.user?._id
+    ? { _id: req.params.id, $or: [{ user: req.user._id }, { user: null }] }
+    : { _id: req.params.id, user: null }
+
+  const scan = await Scan.findOne(userFilter).lean()
 
   if (!scan) throw new ApiError(404, 'Scan not found')
   return res.json(new ApiResponse(200, scan))

@@ -12,10 +12,12 @@ router.post('/analyze', optionalVerifyToken, scanLimiter, medicineImageUpload.si
 router.post('/chat', optionalVerifyToken, chatAboutMedicine)
 router.get('/verify-batch', verifyBatch)
 
+// History routes — use optionalVerifyToken so guest scans are also visible
+router.get('/history', optionalVerifyToken, getScanHistory)
+router.get('/history/:id', optionalVerifyToken, getScanById)
+
 router.use(verifyToken)
 
-router.get('/history', getScanHistory)
-router.get('/history/:id', getScanById)
 router.delete('/:id', deleteScan)
 
 export default router
