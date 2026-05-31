@@ -6,8 +6,8 @@ import path from 'path'
 import fs from 'fs'
 
 // Check if Cloudinary is configured
-const isCloudinaryConfigured = process.env.CLOUDINARY_CLOUD_NAME && 
-                               process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name'
+const isCloudinaryConfigured = process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name'
 
 let medicineStorage;
 let documentStorage;

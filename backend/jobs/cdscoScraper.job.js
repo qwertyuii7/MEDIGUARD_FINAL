@@ -27,8 +27,10 @@ export const scrapeAndSaveAlerts = async () => {
 
       const $ = cheerio.load(response.data)
 
-      // Try to find table rows or list items with alert info
-      $('table tr, .alert-item, .notification-item, li').each(async (i, el) => {
+      // Convert to array to use for...of loop with async/await properly
+      const elements = $('table tr, .alert-item, .notification-item, li').toArray()
+
+      for (const el of elements) {
         const text = $(el).text().trim()
         const link = $(el).find('a').attr('href') || ''
 
@@ -68,7 +70,7 @@ export const scrapeAndSaveAlerts = async () => {
             newAlerts++
           }
         }
-      })
+      }
     } catch (error) {
       console.error(`[CDSCO SCRAPER] Failed to scrape ${url}:`, error.message)
     }

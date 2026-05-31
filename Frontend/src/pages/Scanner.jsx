@@ -116,12 +116,16 @@ const Scanner = () => {
   const [currentScanId, setCurrentScanId] = useState(() => {
     return localStorage.getItem('mediguard_current_scan_id');
   });
+  const [language, setLanguage] = useState(() => {
+    return localStorage.getItem('mediguard_language') || 'en';
+  });
 
   useEffect(() => {
     localStorage.setItem('mediguard_scan_history_messages', JSON.stringify(messages));
     localStorage.setItem('mediguard_scan_complete', pipelineComplete);
     if (currentScanId) localStorage.setItem('mediguard_current_scan_id', currentScanId);
-  }, [messages, pipelineComplete, currentScanId]);
+    localStorage.setItem('mediguard_language', language);
+  }, [messages, pipelineComplete, currentScanId, language]);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -195,7 +199,9 @@ const Scanner = () => {
       const step2Timer = setTimeout(() => setCurrentStep(3), 4000);
       const step3Timer = setTimeout(() => setCurrentStep(4), 6000);
 
-      const response = await scanMedicine(file, userLocation);
+      // Pass language inside userLocation for convenience
+      const locationData = userLocation ? { ...userLocation, language } : { language };
+      const response = await scanMedicine(file, locationData);
       
       // Clear timers and finish steps
       clearTimeout(step1Timer);
@@ -317,6 +323,7 @@ Risk Level: ${p?.finalRiskLevel || 'UNKNOWN'}`
       const response = await api.post('/scan/chat', {
         message: userMessage,
         scanId: currentScanId,
+        language: language,
         medicineContext: getMedicineContext(),
         conversationHistory: messages
           .filter(m => m.type === 'chat')
@@ -379,13 +386,24 @@ Risk Level: ${p?.finalRiskLevel || 'UNKNOWN'}`
                   <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
                   <span className="text-primary font-bold text-[10px] uppercase tracking-[0.2em]">Analysis Protocol Active</span>
                 </div>
-                <button 
-                  onClick={() => navigate('/dashboard/history')}
-                  className="flex items-center gap-1.5 text-[11px] font-bold text-text-secondary hover:text-primary transition-all uppercase"
-                >
-                  <History size={14} />
-                  Scan History
-                </button>
+                <div className="flex items-center gap-4">
+                  <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                    className="bg-bg-primary text-text-primary text-xs font-bold px-2 py-1 rounded border border-border-color outline-none cursor-pointer uppercase"
+                  >
+                    <option value="en">English</option>
+                    <option value="hi">हिंदी (Hindi)</option>
+                    <option value="ur">اردو (Urdu)</option>
+                  </select>
+                  <button 
+                    onClick={() => navigate('/dashboard/history')}
+                    className="flex items-center gap-1.5 text-[11px] font-bold text-text-secondary hover:text-primary transition-all uppercase"
+                  >
+                    <History size={14} />
+                    History
+                  </button>
+                </div>
               </div>
             
               <ImageSection 

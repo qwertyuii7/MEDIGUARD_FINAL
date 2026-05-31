@@ -45,7 +45,7 @@ CRITICAL:
 - Grade A is professional pharmaceutical standard. Grade F has obvious errors.`
 
 // ─── LAYER 3 PROMPT: Final safety assessment ────────────────────
-const buildLayer3Prompt = (ocrAndQualityData, batchStatus) => `You are a medicine safety advisor for Indian patients.
+const buildLayer3Prompt = (ocrAndQualityData, batchStatus, languagePref = 'en') => `You are a medicine safety advisor for Indian patients.
 
 You have received these analysis results:
 
@@ -78,7 +78,9 @@ PATIENT_RECOMMENDATION:
 [clear advice for the patient in simple English]
 
 NEXT_STEPS:
-[numbered list of what patient should do]`
+[numbered list of what patient should do]
+
+CRITICAL INSTRUCTION: The values you provide for WHAT_IS_CERTAIN, WHAT_IS_UNCERTAIN, PATIENT_RECOMMENDATION, and NEXT_STEPS MUST be written entirely in ${languagePref === 'hi' ? 'Hindi (Devanagari script)' : languagePref === 'ur' ? 'Urdu (Arabic script)' : 'English'}. The JSON keys themselves must remain exactly as requested above.`
 
 // ─── Call Groq with Retry Logic ──────────────────────────────────
 const callGroq = async (payload, retries = 2) => {
@@ -211,13 +213,13 @@ export const performOcrAndQualityCheck = async (base64Data, mimeType) => {
 }
 
 // ─── Step 3: Final Safety Assessment ────────────────────────────
-export const generateFinalSafetyAssessment = async (ocrAndQualityData, batchStatusText) => {
+export const generateFinalSafetyAssessment = async (ocrAndQualityData, batchStatusText, languagePref = 'en') => {
   console.log('[AI SERVICE] Step 2: Running Final Safety Assessment...')
   const payload = {
     model: 'llama-3.3-70b-versatile',
     messages: [{
       role: 'user',
-      content: buildLayer3Prompt(ocrAndQualityData, batchStatusText)
+      content: buildLayer3Prompt(ocrAndQualityData, batchStatusText, languagePref)
     }],
     max_tokens: 800,
     temperature: 0.1
@@ -283,11 +285,13 @@ export const analyzeImage = async (imageUrl, batchFromDB = null) => {
 }
 
 // ─── Chat Response ──────────────────────────────────────────────
-export const askGroq = async (userMessage, conversationHistory = [], medicineContext = '') => {
+export const askGroq = async (userMessage, conversationHistory = [], medicineContext = '', languagePref = 'en') => {
   const GROQ_CHAT_MODEL = 'llama-3.3-70b-versatile'
-  const systemContext = medicineContext
+  let systemContext = medicineContext
     ? `Analyze this: ${medicineContext}. Answer user questions.`
     : 'Helpful MediGuard AI assistant.'
+
+  systemContext += `\n\nCRITICAL INSTRUCTION: You MUST reply entirely in the following language: ${languagePref === 'hi' ? 'Hindi (Devanagari script)' : languagePref === 'ur' ? 'Urdu (Arabic script)' : 'English'}.`
 
   const messages = [{ role: 'system', content: systemContext }]
   conversationHistory.forEach(msg => messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content }))

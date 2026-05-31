@@ -4,11 +4,11 @@ import BatchNumber from '../models/BatchNumber.model.js'
 import Chemist from '../models/Chemist.model.js'
 import { ApiError, ApiResponse } from '../utils/apiResponse.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
-import { 
-  fetchImageAsBase64, 
-  performOcrAndQualityCheck, 
-  generateFinalSafetyAssessment, 
-  askGroq 
+import {
+  fetchImageAsBase64,
+  performOcrAndQualityCheck,
+  generateFinalSafetyAssessment,
+  askGroq
 } from '../services/groq.service.js'
 import { findBatchInMap } from './batch.controller.js'
 
@@ -22,7 +22,7 @@ export const chatAboutMedicine = asyncHandler(async (req, res) => {
   // If Gemini key is missing, fallback to Groq
   if (!GEMINI_API_KEY) {
     console.log('[CHAT] Gemini API key missing, falling back to Groq...')
-    const reply = await askGroq(message, conversationHistory, medicineContext)
+    const reply = await askGroq(message, conversationHistory, medicineContext, req.body.language)
     return res.json(new ApiResponse(200, {
       reply,
       searchQueries: [],
@@ -44,6 +44,8 @@ Risk Level: ${scan.riskLevel}`
   }
 
   const systemPrompt = `You are MediGuard AI assistant, a helpful medicine information expert for Indian users. 
+  
+CRITICAL INSTRUCTION: You MUST reply entirely in the following language: ${req.body.language === 'hi' ? 'Hindi (Devanagari script)' : req.body.language === 'ur' ? 'Urdu (Arabic script)' : 'English'}.
 
 Context about the medicine being discussed:
 ${fullContext}
@@ -121,7 +123,7 @@ export const verifyBatch = asyncHandler(async (req, res) => {
   if (!rawBatch) throw new ApiError(400, 'Batch number is required')
 
   const cleanBatch = String(rawBatch).trim().toUpperCase()
-  
+
   // Try map lookup first
   const mapResult = findBatchInMap(cleanBatch)
   if (mapResult) {
@@ -201,7 +203,7 @@ export const analyzeMedicine = asyncHandler(async (req, res) => {
 
   let batchStatusText = 'Not checked'
   if (batchDbResult) {
-    batchStatusText = batchDbResult.status === 'RECALLED' 
+    batchStatusText = batchDbResult.status === 'RECALLED'
       ? `⚠️ RECALLED — ${batchDbResult.recallReason} (${batchDbResult.recallAuthority})`
       : '⚠️ Under Investigation by authorities'
   } else if (detectedBatch) {
@@ -209,7 +211,8 @@ export const analyzeMedicine = asyncHandler(async (req, res) => {
   }
 
   // Step 3: Run final Safety Assessment
-  const layer3 = await generateFinalSafetyAssessment(ocrRaw, batchStatusText)
+  const languagePref = req.body.language || 'en';
+  const layer3 = await generateFinalSafetyAssessment(ocrRaw, batchStatusText, languagePref)
 
   // Step 4: Get nearby chemists (2km radius)
   let nearbyChemists = []
@@ -327,9 +330,9 @@ export const getScanHistory = asyncHandler(async (req, res) => {
 })
 
 export const getScanById = asyncHandler(async (req, res) => {
-  const scan = await Scan.findOne({ 
-    _id: req.params.id, 
-    user: req.user._id 
+  const scan = await Scan.findOne({
+    _id: req.params.id,
+    user: req.user._id
   }).lean()
 
   if (!scan) throw new ApiError(404, 'Scan not found')
@@ -338,7 +341,7 @@ export const getScanById = asyncHandler(async (req, res) => {
 
 export const deleteScan = asyncHandler(async (req, res, next) => {
   const scan = await Scan.findOneAndDelete({ _id: req.params.id, user: req.user._id })
-  
+
   if (!scan) {
     return next(new ApiError(404, 'Scan not found'))
   }
@@ -350,6 +353,6 @@ export const getPublicStats = asyncHandler(async (req, res, next) => {
   const total = await Scan.countDocuments()
   const genuine = await Scan.countDocuments({ result: { $in: ['LOOKS_PROFESSIONAL', 'GENUINE'] } })
   const fake = await Scan.countDocuments({ result: { $in: ['HAS_ISSUES', 'UNCLEAR', 'FAKE', 'SUSPICIOUS'] } })
-  
+
   res.status(200).json(new ApiResponse(200, { total, genuine, fake }, 'Public stats fetched'))
 })

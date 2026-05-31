@@ -20,6 +20,13 @@ export const scanMedicine = async (imageFile, userLocation = null) => {
     formData.append('location[state]', 'Delhi');
   }
 
+  // Pass language preference
+  if (userLocation && userLocation.language) {
+    formData.append('language', userLocation.language);
+  } else {
+    formData.append('language', 'en'); // default to English
+  }
+
   const response = await api.post(`${API_URL}/analyze`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
